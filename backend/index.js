@@ -41,9 +41,6 @@ app.post("/signup", async (req, res) => {
       .status(400)
       .json({ error: true, message: "Password is required." });
   }
-  if (!role) {
-    return res.status(400).json({ error: true, message: "Role is required." });
-  }
   const isUser = await User.findOne({ email: email });
   if (isUser) {
     return res.json({ error: true, message: "User already exists." });
@@ -62,6 +59,7 @@ app.post("/signup", async (req, res) => {
     accessToken,
   });
 });
+
 //Login
 app.post("/login", async (req, res) => {
   try {
@@ -83,7 +81,7 @@ app.post("/login", async (req, res) => {
     if (!userInfo) {
       return res.status(404).json({ error: true, message: "User not found" });
     }
-    if (userInfo.password === password) {
+    if (userInfo.password === password && userInfo.email === email) {
       const user = { user: userInfo };
       const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
         expiresIn: "45m",
@@ -102,6 +100,32 @@ app.post("/login", async (req, res) => {
     }
   } catch (err) {
     return res.status(500).json({ error: true, message: "Server Error" });
+  }
+});
+//GetUser
+app.get("/user", authenticateToken, async (req, res) => {
+  try {
+    const { user } = req.user;
+    const isUser = await User.findOne({ _id: user._id });
+
+    if (!isUser) {
+      return res.status(401).json({ error: true, message: "User not found" });
+    }
+
+    return res.json({
+      error: false,
+      user: {
+        firstName: isUser.firstName,
+        lastName: isUser.lastName,
+        email: isUser.email,
+        _id: isUser._id,
+        role: isUser.role,
+        created: isUser.created,
+      },
+    });
+  } catch (error) {
+    console.error("Server Error:", error);
+    res.status(500).json({ error: true, message: "Server Error" });
   }
 });
 
