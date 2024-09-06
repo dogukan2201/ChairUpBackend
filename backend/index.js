@@ -128,7 +128,15 @@ app.get("/user", authenticateToken, async (req, res) => {
     res.status(500).json({ error: true, message: "Server Error" });
   }
 });
-
+app.get("/getAllUser", async (req, res) => {
+  try {
+    const users = await User.find({});
+    return res.json({ error: false, users });
+  } catch (error) {
+    console.error("Server Error:", error);
+    res.status(500).json({ error: true, message: "Server Error" });
+  }
+});
 app.listen(8000);
 
 module.exports = app;
