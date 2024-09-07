@@ -20,7 +20,6 @@ app.get("/", (req, res) => {
   res.json({ data: "hello" });
 });
 
-//Create Account
 app.post("/signup", async (req, res) => {
   const { firstName, lastName, email, password, role } = req.body;
   if (!firstName) {
@@ -60,7 +59,6 @@ app.post("/signup", async (req, res) => {
   });
 });
 
-//Login
 app.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -102,7 +100,7 @@ app.post("/login", async (req, res) => {
     return res.status(500).json({ error: true, message: "Server Error" });
   }
 });
-//GetUser
+
 app.get("/user", authenticateToken, async (req, res) => {
   try {
     const { user } = req.user;
@@ -137,6 +135,22 @@ app.get("/getAllUser", async (req, res) => {
     res.status(500).json({ error: true, message: "Server Error" });
   }
 });
+app.delete("/deleteUser/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deletedUser = await User.findByIdAndDelete(id);
+
+    if (!deletedUser) {
+      return res.status(404).json({ error: true, message: "User not found" });
+    }
+
+    return res.json({ error: false, message: "User Deleted" });
+  } catch (error) {
+    console.error("Server Error:", error);
+    res.status(500).json({ error: true, message: "Server Error" });
+  }
+});
+
 app.listen(8000);
 
 module.exports = app;
