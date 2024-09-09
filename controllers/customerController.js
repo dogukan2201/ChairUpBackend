@@ -1,0 +1,192 @@
+const customer = require("../models/customer.model");
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
+
+
+// Signup - Create a new customer account
+exports.signup = async (req, res) => {
+    const { firstName, lastName, email, phoneNumber, password } = req.body;
+
+    if (!firstName) {
+        return res.status(400).json({ error: true, message: "First name is required." });
+    }
+    if (!lastName) {
+        return res.status(400).json({ error: true, message: "Last name is required." });
+    }
+    if (!email) {
+        return res.status(400).json({ error: true, message: "Email is required." });
+    }
+    if (!password) {
+        return res.status(400).json({ error: true, message: "Password is required." });
+    }
+    if (!phoneNumber) {
+        return res.status(400).json({ error: true, message: "Phone Number is required." });
+    }
+
+    try {
+        const existingCustomer = await customer.findOne({ email });
+        if (existingCustomer) {
+            return res.status(409).json({ error: true, message: "Customer already exists." });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+        const newCustomer = new customer({ firstName, lastName, email, phoneNumber, password: hashedPassword });
+
+        await newCustomer.save();
+
+        const accessToken = jwt.sign({ customerId: customer._id }, process.env.ACCESS_TOKEN_SECRET, {
+            expiresIn: "45m",
+        });
+
+        return res.status(201).json({
+            error: false,
+            customer: newCustomer,
+            message: "Customer registered successfully.",
+            accessToken,
+        });
+    } catch (error) {
+        return res.status(500).json({ error: true, message: "Server Error" });
+    }
+};
+
+// Login - Authenticate customer and return access token
+exports.login = async (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email) {
+        return res.status(400).json({ error: true, message: "Email is required." });
+    }
+    if (!password) {
+        return res.status(400).json({ error: true, message: "Password is required." });
+    }
+
+    try {
+        const customer = await customer.findOne({ email });
+
+        if (!customer) {
+            return res.status(401).json({ error: true, message: "Invalid Credentials" });
+        }
+
+        const isPasswordValid = await bcrypt.compare(password, customer.password);
+        if (!isPasswordValid) {
+            return res.status(401).json({ error: true, message: "Invalid Credentials" });
+        }
+
+        const accessToken = jwt.sign({ customerId: customer._id }, process.env.ACCESS_TOKEN_SECRET, {
+            expiresIn: "45m",
+        });
+
+        return res.json({
+            error: false,
+            message: "Login Successful",
+            accessToken,
+            email: customer.email,
+        });
+    } catch (error) {
+        return res.status(500).json({ error: true, message: "Server Error" });
+    }
+};
+
+
+// Get customer - Retrieve customer details for authenticated customer
+exports.getCustomer = async (req, res) => {
+    try {
+        const { customerId } = req.customer;
+        const foundCustomer = await customer.findById(customerId);
+
+        if (!foundCustomer) {
+            return res.status(404).json({ error: true, message: "Customer not found" });
+        }
+
+        return res.json({
+            error: false,
+            customer: {
+                firstName: foundCustomer.firstName,
+                lastName: foundCustomer.lastName,
+                email: foundCustomer.email,
+                phoneNumber: foundCustomer.phoneNumber,
+                createdAt: foundCustomer.createdAt,
+                updatedAt: foundCustomer.updatedAt,
+                isActive: foundCustomer.isActive,
+            },
+        });
+    } catch (error) {
+        return res.status(500).json({ error: true, message: "Server Error" });
+    }
+};
+
+
+// Get All customers - Retrieve list of all customers
+exports.getAllCustomers = async (req, res) => {
+    try {
+        const customers = await customer.find({});
+        return res.json({ error: false, customers });
+    } catch (error) {
+        return res.status(500).json({ error: true, message: "Server Error" });
+    }
+};
+
+exports.updateProfile = async (req, res) => {
+    const { firstName, lastName, email, password, isActive } = req.body;
+
+    try {
+        const { customer } = req.customer;
+        const foundCustomer = await customer.findById(customer._id);
+
+        if (!foundCustomer) {
+            return res.status(401).json({ error: true, message: "Unauthorized customer" });
+        }
+
+        // Update fields only if they exist in the request
+        if (firstName) foundCustomer.firstName = firstName;
+        if (lastName) foundCustomer.lastName = lastName;
+        if (email) foundCustomer.email = email;
+        if (isActive) foundCustomer.isActive = isActive;
+        if (password) {
+            // Hash password before saving
+            const salt = await bcrypt.genSalt(10);
+            foundCustomer.password = await bcrypt.hash(password, salt);
+        }
+        
+        foundCustomer.updatedAt = Date.now(); // This replaces the pre-save middleware you tried to add
+
+        // Save updated customer
+        await foundCustomer.save();
+
+        // Generate a new token with updated customer info
+        const accessToken = jwt.sign({ customerId: customer._id }, process.env.ACCESS_TOKEN_SECRET, {
+            expiresIn: "45m",
+        });
+
+        return res.json({
+            error: false,
+            message: "Profile Update Successful",
+            accessToken,
+        });
+    } catch (error) {
+        return res.status(500).json({ error: true, message: "Server Error" });
+    }
+};
+
+exports.deleteProfile = async (req, res) => {
+    try {
+        const { customer } = req.customer;
+        const foundCustomer = await customer.findById(req.customer.customer._id);
+
+        if (!foundCustomer) {
+            return res.status(404).json({ error: true, message: "customer Not Found" });
+        }
+
+        await foundCustomer.delete();
+
+        return res.json({
+            error: false,
+            message: "Profile Deleted",
+            customerId: foundCustomer._id,
+        });
+    } catch (error) {
+        return res.status(500).json({ error: true, message: "Server Error" });
+    }
+};
+
