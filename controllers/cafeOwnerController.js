@@ -1,9 +1,9 @@
-const Customer = require("../models/customer.model");
+const CafeOwner = require("../models/cafeOwner.model");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 
 
-// Signup - Create a new customer account
+// Signup - Create a new Cafe Owner account
 exports.signup = async (req, res) => {
     const { firstName, lastName, email, phoneNumber, password } = req.body;
 
@@ -24,26 +24,26 @@ exports.signup = async (req, res) => {
     }
 
     try {
-        const existingCustomer = await Customer.findOne({ email });
-        if (existingCustomer) {
-            return res.status(409).json({ error: true, message: "Customer already exists." });
+        const existingCafeOwner = await CafeOwner.findOne({ email });
+        if (existingCafeOwner) {
+            return res.status(409).json({ error: true, message: "Cafe owner already exists." });
         }
 
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
-        const newCustomer = new Customer({ firstName, lastName, email, phoneNumber, password: hashedPassword });
+        const newCafeOwner = new CafeOwner({ firstName, lastName, email, phoneNumber, password: hashedPassword });
 
-        await newCustomer.save();
+        await newCafeOwner.save();
 
-        const accessToken = jwt.sign({ customerId: Customer._id }, process.env.ACCESS_TOKEN_SECRET, {
+        const accessToken = jwt.sign({ cafeOwnerId: newCafeOwner._id }, process.env.ACCESS_TOKEN_SECRET, {
             expiresIn: "45m",
         });
 
 
         return res.status(201).json({
             error: false,
-            customer: newCustomer,
-            message: "Customer registered successfully.",
+            cafeOwner: newCafeOwner,
+            message: "Cafe owner registered successfully.",
             accessToken,
         });
     } catch (error) {
@@ -51,7 +51,7 @@ exports.signup = async (req, res) => {
     }
 };
 
-// Login - Authenticate customer and return access token
+// Login - Authenticate Cafe Owner and return access token
 exports.login = async (req, res) => {
     const { email, password } = req.body;
 
@@ -63,18 +63,18 @@ exports.login = async (req, res) => {
     }
 
     try {
-        const customer = await Customer.findOne({ email });
+        const cafeOwner = await CafeOwner.findOne({ email });
 
-        if (!customer) {
+        if (!cafeOwner) {
             return res.status(401).json({ error: true, message: "Invalid Credentials" });
         }
 
-        const isPasswordValid = await bcrypt.compare(password, customer.password);
+        const isPasswordValid = await bcrypt.compare(password, cafeOwner.password);
         if (!isPasswordValid) {
             return res.status(401).json({ error: true, message: "Invalid Credentials" });
         }
 
-        const accessToken = jwt.sign({ customerId: customer._id }, process.env.ACCESS_TOKEN_SECRET, {
+        const accessToken = jwt.sign({ cafeOwnerId: cafeOwner._id }, process.env.ACCESS_TOKEN_SECRET, {
             expiresIn: "45m",
         });
 
@@ -82,8 +82,8 @@ exports.login = async (req, res) => {
             error: false,
             message: "Login Successful",
             accessToken,
-            email: customer.email,
-            role: "Customer"
+            email: cafeOwner.email,
+            role: "Cafe Owner",
         });
     } catch (error) {
         return res.status(500).json({ error: true, message: "Server Error" });
@@ -91,40 +91,40 @@ exports.login = async (req, res) => {
 };
 
 
-// Get customer - Retrieve customer details for authenticated customer
-exports.getCustomer = async (req, res) => {
+// Get Cafe Owner - Retrieve Cafe Owner details for authenticated Cafe Owner
+exports.getCafeOwner = async (req, res) => {
     try {
-        const { customerId } = req.customer;
-        const foundCustomer = await Customer.findById(customerId);
+        const { cafeOwnerId } = req.cafeOwner;
+        const foundCafeOwner = await CafeOwner.findById(cafeOwnerId);
 
-        if (!foundCustomer) {
-            return res.status(404).json({ error: true, message: "Customer not found" });
+        if (!foundCafeOwner) {
+            return res.status(404).json({ error: true, message: "Cafe Owner not found" });
         }
 
         return res.json({
             error: false,
-            customer: {
-                firstName: foundCustomer.firstName,
-                lastName: foundCustomer.lastName,
-                email: foundCustomer.email,
-                phoneNumber: foundCustomer.phoneNumber,
-                createdAt: foundCustomer.createdAt,
-                updatedAt: foundCustomer.updatedAt,
-                isActive: foundCustomer.isActive,
+            cafeOwner: {
+                firstName: foundCafeOwner.firstName,
+                lastName: foundCafeOwner.lastName,
+                email: foundCafeOwner.email,
+                phoneNumber: foundCafeOwner.phoneNumber,
+                createdAt: foundCafeOwner.createdAt,
+                updatedAt: foundCafeOwner.updatedAt,
+                isActive: foundCafeOwner.isActive,
             },
         });
     } catch (error) {
-        console.error("Error getting customer:", error);
+        console.error("Error getting cafe owner:", error);
         return res.status(500).json({ error: true, message: "Server Error" });
     }
 };
 
 
-// Get All customers - Retrieve list of all customers
-exports.getAllCustomers = async (req, res) => {
+
+exports.getAllOwners = async (req, res) => {
     try {
-        const customers = await Customer.find({});
-        return res.json({ error: false, customers });
+        const cafeOwners = await CafeOwner.find({});
+        return res.json({ error: false, cafeOwners });
     } catch (error) {
         return res.status(500).json({ error: true, message: "Server Error" });
     }
@@ -134,32 +134,32 @@ exports.updateProfile = async (req, res) => {
     const { firstName, lastName, email, phoneNumber, password, isActive } = req.body;
 
     try {
-        const { customerId } = req.customer; // Get customerId directly from req.customer
-        const foundCustomer = await Customer.findById(customerId);
+        const { cafeOwnerId } = req.cafeOwner; // Get cafeOwnerId directly from req.cafeOwner
+        const foundCafeOwner = await CafeOwner.findById(cafeOwnerId);
 
-        if (!foundCustomer) {
-            return res.status(401).json({ error: true, message: "Unauthorized customer" });
+        if (!foundCafeOwner) {
+            return res.status(401).json({ error: true, message: "Unauthorized Cafe Owner" });
         }
 
         // Update fields only if they exist in the request
-        if (firstName) foundCustomer.firstName = firstName;
-        if (lastName) foundCustomer.lastName = lastName;
-        if (email) foundCustomer.email = email;
-        if (phoneNumber) foundCustomer.phoneNumber = phoneNumber;
-        if (isActive) foundCustomer.isActive = isActive;
+        if (firstName) foundCafeOwner.firstName = firstName;
+        if (lastName) foundCafeOwner.lastName = lastName;
+        if (email) foundCafeOwner.email = email;
+        if (phoneNumber) foundCafeOwner.phoneNumber = phoneNumber;
+        if (isActive) foundCafeOwner.isActive = isActive;
         if (password) {
             // Hash password before saving
             const salt = await bcrypt.genSalt(10);
-            foundCustomer.password = await bcrypt.hash(password, salt);
+            foundCafeOwner.password = await bcrypt.hash(password, salt);
         }
 
-        foundCustomer.updatedAt = Date.now();
+        foundCafeOwner.updatedAt = Date.now();
 
-        // Save updated customer
-        await foundCustomer.save();
+        // Save updated Cafe Owner
+        await foundCafeOwner.save();
 
-        // Generate a new token with updated customer info
-        const accessToken = jwt.sign({ customerId: foundCustomer._id }, process.env.ACCESS_TOKEN_SECRET, {
+        // Generate a new token with updated Cafe Owner info
+        const accessToken = jwt.sign({ cafeOwnerId: foundCafeOwner._id }, process.env.ACCESS_TOKEN_SECRET, {
             expiresIn: "45m",
         });
 
@@ -176,19 +176,19 @@ exports.updateProfile = async (req, res) => {
 
 exports.deleteProfile = async (req, res) => {
     try {
-        const { customerId } = req.customer; // Get customerId directly from req.customer
-        const foundCustomer = await Customer.findById(customerId); // Use customerId to find the customer
+        const { cafeOwnerId } = req.cafeOwner; // Get cafeOwnerId directly from req.cafeOwner
+        const foundCafeOwner = await CafeOwner.findById(cafeOwnerId); // Use cafeOwnerId to find the Cafe Owner
 
-        if (!foundCustomer) {
-            return res.status(404).json({ error: true, message: "Customer Not Found" });
+        if (!foundCafeOwner) {
+            return res.status(404).json({ error: true, message: "Cafe Owner Not Found" });
         }
 
-        await Customer.findByIdAndDelete(customerId);
+        await CafeOwner.findByIdAndDelete(cafeOwnerId);
 
         return res.json({
             error: false,
             message: "Profile Deleted",
-            customerId: foundCustomer._id,
+            cafeOwnerId: foundCafeOwner._id,
         });
     } catch (error) {
         console.error("Error deleting profile:", error); // Log the error for debugging
@@ -200,15 +200,15 @@ exports.resetPassword = async (req, res) => {
     const { email, newPassword } = req.body;
 
     try {
-        const customer = await Customer.findOne({ email });
-        if (!customer) {
-            return res.status(404).json({ error: true, message: "Customer not found" });
+        const cafeOwner = await CafeOwner.findOne({ email });
+        if (!cafeOwner) {
+            return res.status(404).json({ error: true, message: "Cafe Owner not found" });
         }
 
         const salt = await bcrypt.genSalt(10);
-        customer.password = await bcrypt.hash(newPassword, salt);
+        cafeOwner.password = await bcrypt.hash(newPassword, salt);
 
-        await customer.save();
+        await cafeOwner.save();
 
         return res.json({ error: false, message: "Password reset successful" });
     } catch (error) {

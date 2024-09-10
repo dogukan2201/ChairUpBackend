@@ -12,4 +12,5 @@ const customerSchema = new Schema({
   updatedAt: { type: Date, default: null},
   isActive: { type: Boolean, default: true},
 });
+
 module.exports = mongoose.model("customer", customerSchema);

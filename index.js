@@ -4,6 +4,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const customerRoutes = require("./routes/customerRoutes");
+const cafeOwnerRoutes = require("./routes/cafeOwnerRoutes");
 
 const app = express();
 
@@ -17,6 +18,7 @@ mongoose.connect(config.connectionString)
 
 
 app.use("/api/customers", customerRoutes);
+app.use("/api/cafeOwners", cafeOwnerRoutes);
 
 app.get("/", (req, res) => {
   res.json({ data: "hello" });
