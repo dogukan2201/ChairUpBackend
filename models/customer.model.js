@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 const Schema = mongoose.Schema;
-//Değiştirdim
+
 const customerSchema = new Schema({
   firstName: { type: String, required: true, trim: true },
   lastName: { type: String, required: true, trim: true },
@@ -12,4 +12,5 @@ const customerSchema = new Schema({
   updatedAt: { type: Date, default: null},
   isActive: { type: Boolean, default: true},
 });
+
 module.exports = mongoose.model("customer", customerSchema);
