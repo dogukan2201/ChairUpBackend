@@ -47,6 +47,7 @@ exports.signup = async (req, res) => {
             accessToken,
         });
     } catch (error) {
+        console.error("Error ")
         return res.status(500).json({ error: true, message: "Server Error" });
     }
 };
@@ -115,17 +116,6 @@ exports.getCustomer = async (req, res) => {
         });
     } catch (error) {
         console.error("Error getting customer:", error);
-        return res.status(500).json({ error: true, message: "Server Error" });
-    }
-};
-
-
-// Get All customers - Retrieve list of all customers
-exports.getAllCustomers = async (req, res) => {
-    try {
-        const customers = await Customer.find({});
-        return res.json({ error: false, customers });
-    } catch (error) {
         return res.status(500).json({ error: true, message: "Server Error" });
     }
 };

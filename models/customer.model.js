@@ -13,4 +13,4 @@ const customerSchema = new Schema({
   isActive: { type: Boolean, default: true},
 });
 
-module.exports = mongoose.model("customer", customerSchema);
+module.exports = mongoose.model("Customer", customerSchema);
