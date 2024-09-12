@@ -7,7 +7,6 @@ const router = express.Router();
 router.post("/signup", signup);
 router.post("/login", login);
 router.get("/customer", authenticateToken, getCustomer);
-router.get("/all", getAllCustomers);
 router.patch("/updateProfile", authenticateToken, updateProfile);
 router.patch("/deleteProfile", authenticateToken, deleteProfile);
 router.patch("/resetPassword", authenticateToken, resetPassword);

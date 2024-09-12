@@ -1,4 +1,7 @@
 const Admin = require("../models/admin.model");
+const CafeOwner = require("../models/cafeOwner.model");
+const Customer = require("../models/customer.model");
+const Cafe = require("../models/cafe.model");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 
@@ -217,5 +220,281 @@ exports.resetPassword = async (req, res) => {
         return res.status(500).json({ error: true, message: "Server Error" });
     }
 };
+
+// Get Customer Info
+exports.getCustomer = async (req, res) => {
+    const { customerId } = req.params;
+
+    try {
+        // Find the customer by email
+        const foundCustomer = await Customer.findById( customerId );
+
+        // Check if the customer exists
+        if (!foundCustomer) {
+            return res.status(404).json({ error: true, message: "Customer not found." });
+        }
+
+        return res.json({
+            error: false,
+            message: "Customer found successfully",
+            customer: {
+                firstName: foundCustomer.firstName,
+                lastName: foundCustomer.lastName,
+                email: foundCustomer.email,
+                phoneNumber: foundCustomer.phoneNumber,
+                createdAt: foundCustomer.createdAt,
+                updatedAt: foundCustomer.updatedAt,
+                isActive: foundCustomer.isActive,
+            },
+        });
+    } catch (error) {
+        console.error("Error founding customer:", error);
+        return res.status(500).json({ error: true, message: "Server Error" });
+    }
+};
+
+// Get All customers - Retrieve list of all customers
+exports.getAllCustomers = async (req, res) => {
+    try {
+        const customers = await Customer.find({});
+        return res.json({ error: false, customers });
+    } catch (error) {
+        return res.status(500).json({ error: true, message: "Server Error" });
+    }
+};
+
+// Delete Customer Profile
+exports.deleteCustomer = async (req, res) => {
+    const { customerId } = req.params;
+
+    try {
+        // Find the customer by email
+        const foundCustomer = await Customer.findById(customerId);
+
+        // Check if the customer exists
+        if (!foundCustomer) {
+            return res.status(404).json({ error: true, message: "Customer not found." });
+        }
+
+        // Delete the customer
+        await Customer.findByIdAndDelete(customerId);
+
+        return res.json({
+            error: false,
+            message: "Customer profile deleted successfully.",
+            customerId: foundCustomer._id,
+        });
+    } catch (error) {
+        console.error("Error deleting customer:", error);
+        return res.status(500).json({ error: true, message: "Server Error" });
+    }
+};
+
+// Get cafe owner Info
+exports.getCafeOwner = async (req, res) => {
+    const { cafeOwnerId } = req.params;
+
+    try {
+        // Find the cafe owner by email
+        const foundCafeOwner = await CafeOwner.findById(cafeOwnerId);
+
+        // Check if the cafe owner exists
+        if (!foundCafeOwner) {
+            return res.status(404).json({ error: true, message: "Cafe Owner not found." });
+        }
+
+        return res.json({
+            error: false,
+            message: "Cafe Owner found successfully",
+            customer: {
+                firstName: foundCafeOwner.firstName,
+                lastName: foundCafeOwner.lastName,
+                email: foundCafeOwner.email,
+                phoneNumber: foundCafeOwner.phoneNumber,
+                createdAt: foundCafeOwner.createdAt,
+                updatedAt: foundCafeOwner.updatedAt,
+                isActive: foundCafeOwner.isActive,
+            },
+        });
+    } catch (error) {
+        console.error("Error founding Cafe Owner:", error);
+        return res.status(500).json({ error: true, message: "Server Error" });
+    }
+};
+
+// Get All cafe owners - Retrieve list of all cafe owner
+exports.getAllCafeOwners = async (req, res) => {
+    try {
+        const cafeOwners = await CafeOwner.find({});
+        return res.json({ error: false, cafeOwners });
+    } catch (error) {
+        return res.status(500).json({ error: true, message: "Server Error" });
+    }
+};
+
+// Delete cafe owner Profile
+exports.deleteCafeOwner = async (req, res) => {
+    const { cafeOwnerId } = req.params;
+
+    try {
+        // Find the cafe owner by email
+        const foundCafeOwner = await CafeOwner.findById(cafeOwnerId);
+
+        // Check if the cafe owner exists
+        if (!foundCafeOwner) {
+            return res.status(404).json({ error: true, message: "Cafe Owner not found." });
+        }
+
+        // Delete the cafe owner
+        await CafeOwner.findByIdAndDelete(cafeOwnerId);
+
+        return res.json({
+            error: false,
+            message: "Cafe Owner profile deleted successfully.",
+            cafeOwnerId: cafeOwnerId,
+        });
+    } catch (error) {
+        console.error("Error deleting Cafe Owner:", error);
+        return res.status(500).json({ error: true, message: "Server Error" });
+    }
+};
+
+// Register a new cafe owner
+exports.registerCafeOwner = async (req, res) => {
+    const { firstName, lastName, email, phoneNumber, password } = req.body;
+
+    // Validate input
+    if (!firstName || !lastName || !email || !password || !phoneNumber) {
+        return res.status(400).json({ error: true, message: "All fields are required." });
+    }
+
+    try {
+        const existingCafeOwner = await CafeOwner.findOne({ email });
+        if (existingCafeOwner) {
+            return res.status(409).json({ error: true, message: "Cafe owner already exists." });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+        const newCafeOwner = new CafeOwner({ firstName, lastName, email, phoneNumber, password: hashedPassword });
+
+        await newCafeOwner.save();
+
+        return res.status(201).json({
+            error: false,
+            cafeOwner: newCafeOwner,
+            message: "Cafe owner registered successfully.",
+        });
+    } catch (error) {
+        console.error("Error registering cafe owner:", error);
+        return res.status(500).json({ error: true, message: "Server Error" });
+    }
+};
+
+//Register Cafe
+exports.registerCafe = async (req, res) => {
+    const { name, location, address, menu, phoneNumber, ownerId } = req.body;
+
+    // Validate input
+    if (!name || !location || !phoneNumber || !ownerId || !address ) {
+        return res.status(400).json({ error: true, message: "All fields are required." });
+    }
+
+    const cafeOwner = await CafeOwner.findById(ownerId);
+    if(!cafeOwner){
+        return res.status(401).json({ error: true, message: "Cafe Owner Id does not exist."})
+    }
+
+    try {
+        const newCafe = new Cafe({ name, address, phoneNumber, location, menu, ownerId });
+
+        await newCafe.save();
+
+        return res.status(201).json({
+            error: false,
+            cafe: newCafe,
+            owner: cafeOwner,
+            message: "Cafe registered successfully.",
+        });
+    } catch (error) {
+        console.error("Error registering cafe:", error);
+        return res.status(500).json({ error: true, message: "Server Error" });
+    }
+};
+
+//Get all cafes
+exports.getAllCafes = async (req, res) => {
+    try {
+        const cafes = await Cafe.find({});
+        return res.json({ error: false, cafes });
+    } catch (error) {
+        console.error("Error getting all cafes", error)
+        return res.status(500).json({ error: true, message: "Server Error" });
+    }
+};
+
+// Delete cafe
+exports.deleteCafe = async (req, res) => {
+    const { cafeId } = req.params;
+
+    try {
+        // Find the cafe owner by email
+        const foundCafe = await Cafe.findById(cafeId);
+
+        // Check if the cafe owner exists
+        if (!foundCafe) {
+            return res.status(404).json({ error: true, message: "Cafe not found." });
+        }
+
+        // Delete the cafe owner
+        await Cafe.findByIdAndDelete(cafeId);
+
+        return res.json({
+            error: false,
+            message: "Cafe deleted successfully.",
+            cafeId: cafeId,
+        });
+    } catch (error) {
+        console.error("Error deleting Cafe:", error);
+        return res.status(500).json({ error: true, message: "Server Error" });
+    }
+};
+
+// Get cafe Info
+exports.getCafe = async (req, res) => {
+    const { cafeId } = req.params;
+
+    try {
+        // Find the cafe owner by email
+        const foundCafe = await Cafe.findById(cafeId);
+
+        // Check if the cafe owner exists
+        if (!foundCafe) {
+            return res.status(404).json({ error: true, message: "Cafe not found." });
+        }
+
+        return res.json({
+            error: false,
+            message: "Cafe found successfully",
+            cafe: {
+                name: foundCafe.name,
+                address: foundCafe.address,
+                phoneNumber: foundCafe.phoneNumber,
+                location: foundCafe.location,
+                menu: foundCafe.menu,
+                ownerId: foundCafe.ownerId,
+                createdAt: foundCafe.createdAt,
+                updatedAt: foundCafe.updatedAt,
+                isActive: foundCafe.isActive,
+            },
+        });
+    } catch (error) {
+        console.error("Error founding Cafe:", error);
+        return res.status(500).json({ error: true, message: "Server Error" });
+    }
+};
+
+
+
 
 
