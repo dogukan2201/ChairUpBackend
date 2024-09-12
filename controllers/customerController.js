@@ -65,6 +65,7 @@ exports.signup = async (req, res) => {
       accessToken,
     });
   } catch (error) {
+    console.error("Error ");
     return res.status(500).json({ error: true, message: "Server Error" });
   }
 };

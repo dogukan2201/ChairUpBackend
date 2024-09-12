@@ -13,4 +13,4 @@ const adminSchema = new Schema({
   isActive: { type: Boolean, default: true },
 });
 
-module.exports = mongoose.model("admin", adminSchema);
+module.exports = mongoose.model("Admin", adminSchema);

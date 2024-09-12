@@ -1,55 +1,8 @@
 const CafeOwner = require("../models/cafeOwner.model");
+const Cafe = require("../models/cafe.model");
+const Employee = require("../models/employee.model");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
-
-
-// Signup - Create a new Cafe Owner account
-exports.signup = async (req, res) => {
-    const { firstName, lastName, email, phoneNumber, password } = req.body;
-
-    if (!firstName) {
-        return res.status(400).json({ error: true, message: "First name is required." });
-    }
-    if (!lastName) {
-        return res.status(400).json({ error: true, message: "Last name is required." });
-    }
-    if (!email) {
-        return res.status(400).json({ error: true, message: "Email is required." });
-    }
-    if (!password) {
-        return res.status(400).json({ error: true, message: "Password is required." });
-    }
-    if (!phoneNumber) {
-        return res.status(400).json({ error: true, message: "Phone Number is required." });
-    }
-
-    try {
-        const existingCafeOwner = await CafeOwner.findOne({ email });
-        if (existingCafeOwner) {
-            return res.status(409).json({ error: true, message: "Cafe owner already exists." });
-        }
-
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-        const newCafeOwner = new CafeOwner({ firstName, lastName, email, phoneNumber, password: hashedPassword });
-
-        await newCafeOwner.save();
-
-        const accessToken = jwt.sign({ cafeOwnerId: newCafeOwner._id }, process.env.ACCESS_TOKEN_SECRET, {
-            expiresIn: "45m",
-        });
-
-
-        return res.status(201).json({
-            error: false,
-            cafeOwner: newCafeOwner,
-            message: "Cafe owner registered successfully.",
-            accessToken,
-        });
-    } catch (error) {
-        return res.status(500).json({ error: true, message: "Server Error" });
-    }
-};
 
 // Login - Authenticate Cafe Owner and return access token
 exports.login = async (req, res) => {
@@ -213,6 +166,36 @@ exports.resetPassword = async (req, res) => {
         return res.json({ error: false, message: "Password reset successful" });
     } catch (error) {
         console.error("Error resetting password:", error);
+        return res.status(500).json({ error: true, message: "Server Error" });
+    }
+};
+
+exports.registerEmployee = async (req, res) => {
+    const { firstName, lastName, email, phoneNumber, password, cafeId } = req.body;
+
+    // Validate input
+    if (!firstName || !lastName || !phoneNumber || !email || !password || !cafeId) {
+        return res.status(400).json({ error: true, message: "All fields are required." });
+    }
+
+    const cafe = await Cafe.findById(cafeId);
+    if (!cafe) {
+        return res.status(401).json({ error: true, message: "Cafe does not exist." })
+    }
+
+    try {
+        const newEmployee = new Employee({ firstName, lastName, phoneNumber, email, password, cafeId });
+
+        await newEmployee.save();
+
+        return res.status(201).json({
+            error: false,
+            employee: newEmployee,
+            cafe: cafe,
+            message: "Employee registered successfully.",
+        });
+    } catch (error) {
+        console.error("Error registering employee:", error);
         return res.status(500).json({ error: true, message: "Server Error" });
     }
 };

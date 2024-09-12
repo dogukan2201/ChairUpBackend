@@ -13,4 +13,4 @@ const cafeOwnerSchema = new Schema({
   isActive: { type: Boolean, default: true },
 });
 
-module.exports = mongoose.model("CafeOwner", cafeOwnerSchema, "cafeOwners");
+module.exports = mongoose.model("CafeOwner", cafeOwnerSchema, "cafeOwners"); //3. paramtere databasedeki collection ismi
